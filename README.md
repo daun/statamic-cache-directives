@@ -46,7 +46,7 @@ The second format follows the [downlevel-hidden syntax](https://learn.microsoft.
 
 ## Syntax
 
-Expressions use [Symfony ExpressionLanguage syntax](https://symfony.com/doc/current/reference/formats/expression_language.html).
+Expressions use [Symfony Expression Language](https://symfony.com/doc/current/reference/formats/expression_language.html) syntax.
 
 ### If
 
@@ -130,25 +130,25 @@ Use `raw` to print a variable value without escaping. Use this only for values y
 
 ### Combined expressions
 
-`&` groups are evaluated inside `|` groups. Use parentheses to group subexpressions or override precedence.
+Use parentheses to group subexpressions or override precedence.
 
 ```html
-<!--[if logged_out | logged_in & super]-->
+<!--[if logged_out or (logged_in and super)]-->
   <a href="/preview">Preview tools</a>
 <!--[endif]-->
 
-<!--[if (logged_out | super) & has_preview]-->
+<!--[if (logged_out or super) and has_preview]-->
   <a href="/preview">Preview tools</a>
 <!--[endif]-->
 
-<!--[if !(logged_in & super)]-->
+<!--[if !(logged_in and super)]-->
   <p>Visible unless signed in as a super admin.</p>
 <!--[endif]-->
 ```
 
 ### Nested data and object methods
 
-Expressions use Symfony ExpressionLanguage syntax. Use `[]` for array keys and `.` for object properties or methods.
+Use `[]` for array keys and `.` for object properties or methods.
 
 ```html
 <!--[if cart["totals"]["items"] > 0 and customer.canCheckout()]-->
@@ -227,7 +227,7 @@ Authentication uses Statamic's configured control-panel guard: `config('statamic
 ### Load admin-only JavaScript
 
 ```html
-<!--[if logged_in & super]-->
+<!--[if logged_in and super]-->
   <script type="module" src="/build/admin-overlay.js"></script>
 <!--[endif]-->
 ```
@@ -263,7 +263,7 @@ Then use those variables in comments:
   <a href="{{ edit_url }}">Edit</a>
 <!--[endif]-->
 
-<!--[if logged_out & has_cart]-->
+<!--[if logged_out and has_cart]-->
   <p>Create an account before checkout to save your order history.</p>
 <!--[endif]-->
 
