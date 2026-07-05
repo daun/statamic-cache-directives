@@ -1,8 +1,10 @@
 <?php
 
 use Daun\StatamicCacheDirectives\CacheDirectiveReplacer;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Factory as AuthFactory;
+use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Auth;
 use Mockery\MockInterface;
 use Statamic\StaticCaching\Replacer;
 use Tests\TestCase;
@@ -34,11 +36,13 @@ function mockCpGuard(bool $check = false, mixed $user = null): MockInterface
 {
     config(['statamic.users.guards.cp' => 'cp']);
 
-    $guard = Mockery::mock();
+    $guard = Mockery::mock(Guard::class);
     $guard->shouldReceive('check')->andReturn($check)->byDefault();
     $guard->shouldReceive('user')->andReturn($user)->byDefault();
 
-    Auth::shouldReceive('guard')->with('cp')->andReturn($guard)->byDefault();
+    $factory = Mockery::mock(AuthFactory::class);
+    $factory->shouldReceive('guard')->with('cp')->andReturn($guard)->byDefault();
+    app()->instance(AuthFactory::class, $factory);
 
     return $guard;
 }
@@ -209,8 +213,43 @@ it('supports built in logged in and logged out conditions', function () {
 });
 
 it('supports the built in super condition', function () {
-    $user = new class
+    $user = new class implements Authenticatable
     {
+        public function getAuthIdentifierName(): string
+        {
+            return 'id';
+        }
+
+        public function getAuthIdentifier(): int
+        {
+            return 1;
+        }
+
+        public function getAuthPasswordName(): string
+        {
+            return 'password';
+        }
+
+        public function getAuthPassword(): string
+        {
+            return '';
+        }
+
+        public function getRememberToken(): ?string
+        {
+            return null;
+        }
+
+        public function setRememberToken($value): void
+        {
+            //
+        }
+
+        public function getRememberTokenName(): string
+        {
+            return 'remember_token';
+        }
+
         public function isSuper(): bool
         {
             return true;
