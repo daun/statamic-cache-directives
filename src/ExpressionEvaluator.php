@@ -3,6 +3,8 @@
 namespace Daun\StatamicCacheDirectives;
 
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage as SymfonyExpressionLanguage;
+use Symfony\Component\ExpressionLanguage\Node\NameNode;
+use Symfony\Component\ExpressionLanguage\Node\Node;
 use Symfony\Component\ExpressionLanguage\SyntaxError;
 
 class ExpressionEvaluator
@@ -51,7 +53,9 @@ class ExpressionEvaluator
         $expression = trim($expression);
 
         try {
-            return $this->language->evaluate($expression, $this->resolvedVariables());
+            $parsed = $this->language->parse($expression, array_keys($this->variables));
+
+            return $this->language->evaluate($parsed, $this->resolvedVariables($this->variableNames($parsed->getNodes())));
         } catch (SyntaxError $e) {
             throw new \InvalidArgumentException($this->messageForSyntaxError($e, $expression), previous: $e);
         } catch (\RuntimeException $e) {
@@ -59,13 +63,32 @@ class ExpressionEvaluator
         }
     }
 
-    /** @return array<string, mixed> */
-    private function resolvedVariables(): array
+    /**
+     * @param  array<int, string>  $names
+     * @return array<string, mixed>
+     */
+    private function resolvedVariables(array $names): array
     {
-        return array_map(
-            fn (mixed $value): mixed => $value instanceof \Closure ? $value() : $value,
-            $this->variables,
-        );
+        $variables = [];
+
+        foreach ($names as $name) {
+            $value = $this->variables[$name] ?? null;
+            $variables[$name] = $value instanceof \Closure ? $value() : $value;
+        }
+
+        return $variables;
+    }
+
+    /** @return array<int, string> */
+    private function variableNames(Node $node): array
+    {
+        $names = $node instanceof NameNode ? [$node->attributes['name']] : [];
+
+        foreach ($node->nodes as $child) {
+            $names = [...$names, ...$this->variableNames($child)];
+        }
+
+        return array_values(array_unique($names));
     }
 
     private function messageForSyntaxError(SyntaxError $error, string $expression): string

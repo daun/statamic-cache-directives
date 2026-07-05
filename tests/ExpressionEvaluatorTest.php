@@ -102,6 +102,20 @@ it('evaluates object properties and methods', function () {
     expect(evaluator(['user' => $user])->evaluate('user.profile.active and user.isSuper()'))->toBeTrue();
 });
 
+it('only resolves closures referenced by the expression', function () {
+    $called = false;
+
+    expect(evaluator([
+        'enabled' => true,
+        'unused' => function () use (&$called) {
+            $called = true;
+
+            return false;
+        },
+    ])->evaluate('enabled'))->toBeTrue()
+        ->and($called)->toBeFalse();
+});
+
 it('inverts conditions for the unless operator', function () {
     $evaluator = evaluator([
         'enabled' => true,
