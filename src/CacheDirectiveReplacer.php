@@ -89,36 +89,42 @@ class CacheDirectiveReplacer implements Replacer
             return $this->restoreIgnoreRanges($content, $ignored, $token);
         }
 
-        foreach (self::PATTERNS as $pattern) {
-            $content = preg_replace_callback($pattern, function (array $matches) {
-                [, $operator, $expression, $inner] = $matches;
+        if (Str::contains($content, '<!--[if') || Str::contains($content, '<!--[unless')) {
+            foreach (self::PATTERNS as $pattern) {
+                $content = preg_replace_callback($pattern, function (array $matches) {
+                    [, $operator, $expression, $inner] = $matches;
 
-                return $this->guard(
-                    fn () => $this->evaluator->evaluate($expression, operator: $operator) ? $inner : '',
-                    '',
-                );
-            }, $content) ?? $content;
+                    return $this->guard(
+                        fn () => $this->evaluator->evaluate($expression, operator: $operator) ? $inner : '',
+                        '',
+                    );
+                }, $content) ?? $content;
+            }
         }
 
-        foreach (self::RAW_PATTERNS as $pattern) {
-            $content = preg_replace_callback($pattern, function (array $matches) {
+        if (Str::contains($content, '<!--[raw')) {
+            foreach (self::RAW_PATTERNS as $pattern) {
+                $content = preg_replace_callback($pattern, function (array $matches) {
+                    return $this->guard(fn () => $this->evaluator->echo($matches[1], escape: false), '');
+                }, $content) ?? $content;
+            }
+
+            $content = preg_replace_callback(self::RAW_INLINE_PATTERN, function (array $matches) {
                 return $this->guard(fn () => $this->evaluator->echo($matches[1], escape: false), '');
             }, $content) ?? $content;
         }
 
-        $content = preg_replace_callback(self::RAW_INLINE_PATTERN, function (array $matches) {
-            return $this->guard(fn () => $this->evaluator->echo($matches[1], escape: false), '');
-        }, $content) ?? $content;
+        if (Str::contains($content, '<!--[echo')) {
+            foreach (self::ECHO_PATTERNS as $pattern) {
+                $content = preg_replace_callback($pattern, function (array $matches) {
+                    return $this->guard(fn () => $this->evaluator->echo($matches[1]), '');
+                }, $content) ?? $content;
+            }
 
-        foreach (self::ECHO_PATTERNS as $pattern) {
-            $content = preg_replace_callback($pattern, function (array $matches) {
+            $content = preg_replace_callback(self::ECHO_INLINE_PATTERN, function (array $matches) {
                 return $this->guard(fn () => $this->evaluator->echo($matches[1]), '');
             }, $content) ?? $content;
         }
-
-        $content = preg_replace_callback(self::ECHO_INLINE_PATTERN, function (array $matches) {
-            return $this->guard(fn () => $this->evaluator->echo($matches[1]), '');
-        }, $content) ?? $content;
 
         return $this->restoreIgnoreRanges($content, $ignored, $token);
     }
