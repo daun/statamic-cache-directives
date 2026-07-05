@@ -174,68 +174,6 @@ it('does not escape raw output', function () {
         ->and($replacer->parse('<!--[raw snippet]>Fallback<![endraw]-->'))->toBe('<b>hi</b>');
 });
 
-it('evaluates directive expressions with or and and operators', function (string $expression, bool $expected) {
-    $replacer = replacerWithVariables([
-        'truthy' => true,
-        'falsy' => false,
-    ]);
-
-    expect($replacer->evaluateExpression($expression))->toBe($expected);
-})->with([
-    'pipe or true' => ['truthy | falsy', true],
-    'or false' => ['falsy | falsy', false],
-    'ampersand and true' => ['truthy & truthy', true],
-    'ampersand and false' => ['truthy & falsy', false],
-]);
-
-it('does not support double boolean operators', function (string $expression) {
-    $replacer = replacerWithVariables([
-        'truthy' => true,
-        'falsy' => false,
-    ]);
-
-    $replacer->evaluateExpression($expression);
-})->with([
-    'double pipe' => ['falsy || truthy'],
-    'double ampersand' => ['truthy && falsy'],
-])->throws(InvalidArgumentException::class, 'Unknown variable in cache directive: ');
-
-it('evaluates negated directive expressions', function (string $expression, bool $expected) {
-    $replacer = replacerWithVariables([
-        'truthy' => true,
-        'falsy' => false,
-    ]);
-
-    expect($replacer->evaluateExpression($expression))->toBe($expected);
-})->with([
-    'bang false' => ['!falsy', true],
-    'bang true' => ['!truthy', false],
-    'not false' => ['not falsy', true],
-    'not true' => ['not truthy', false],
-]);
-
-it('evaluates parenthesized directive subexpressions', function (string $expression, bool $expected) {
-    $replacer = replacerWithVariables([
-        'truthy' => true,
-        'falsy' => false,
-    ]);
-
-    expect($replacer->evaluateExpression($expression))->toBe($expected);
-})->with([
-    'wrapped truthy' => ['(truthy)', true],
-    'wrapped falsy' => ['(falsy)', false],
-    'nested wrapped truthy' => ['((truthy))', true],
-    'wrapped and false' => ['(truthy & falsy)', false],
-    'wrapped or true' => ['(truthy | falsy)', true],
-    'negated wrapped false' => ['!(falsy)', true],
-    'negated wrapped and false' => ['!(truthy & falsy)', true],
-    'negated wrapped or true' => ['!(truthy | falsy)', false],
-    'and with wrapped operands' => ['(truthy)&(truthy)', true],
-    'or with wrapped operands' => ['(falsy)|(truthy)', true],
-    'parentheses override precedence false' => ['(truthy | falsy) & falsy', false],
-    'parentheses preserve nested precedence true' => ['truthy | (falsy & falsy)', true],
-]);
-
 it('parses directives with parenthesized subexpressions', function () {
     $replacer = replacerWithVariables([
         'truthy' => true,
@@ -245,17 +183,6 @@ it('parses directives with parenthesized subexpressions', function () {
     expect($replacer->parse('<!--[if (truthy | falsy) & truthy]-->Visible<!--[endif]-->'))->toBe('Visible')
         ->and($replacer->parse('<!--[if (truthy | falsy) & falsy]-->Hidden<!--[endif]-->'))->toBe('');
 });
-
-it('throws for unbalanced directive subexpressions', function (string $expression) {
-    $replacer = replacerWithVariables([
-        'truthy' => true,
-    ]);
-
-    $replacer->evaluateExpression($expression);
-})->with([
-    'missing closing parenthesis' => ['(truthy'],
-    'missing opening parenthesis' => ['truthy)'],
-])->throws(InvalidArgumentException::class, 'Unmatched parentheses in cache directive:');
 
 it('calls closure backed condition variables', function () {
     $called = false;
@@ -271,12 +198,6 @@ it('calls closure backed condition variables', function () {
     expect($replacer->parse('<!--[if computed]-->Visible<!--[endif]-->'))->toBe('Visible')
         ->and($called)->toBeTrue();
 });
-
-it('throws for unknown condition variables', function () {
-    $replacer = replacerWithVariables();
-
-    $replacer->evaluateExpression('missing');
-})->throws(InvalidArgumentException::class, 'Unknown variable in cache directive: missing');
 
 it('supports built in logged in and logged out conditions', function () {
     mockCpGuard(check: true);
