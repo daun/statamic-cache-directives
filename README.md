@@ -104,11 +104,11 @@ Use `|` or `||`.
 <!--[endif]-->
 ```
 
-Unknown condition names throw an `InvalidArgumentException`, so typos fail loudly.
+Unknown variable names throw an `InvalidArgumentException`, so typos fail loudly.
 
-## Built-in conditions
+## Built-in variables
 
-These condition directives are available by default:
+These variables are available by default and can be used as conditions:
 
 - `logged_in`: Current Statamic user is authenticated.
 - `logged_out`: Current Statamic user is not authenticated.
@@ -180,10 +180,10 @@ Authentication uses Statamic's configured control-panel guard: `config('statamic
 <!--[endif]-->
 ```
 
-## Custom conditions
+## Custom variables
 
-Add your own condition names with the `conditions` hook. Register the hook during application boot, for example in `app/Providers/AppServiceProvider.php`.
-Values can be scalar values or closures that are called when the condition is evaluated.
+Add your own variable names with the `variables` hook. Register the hook during application boot, for example in `app/Providers/AppServiceProvider.php`.
+Values can be scalar values or closures that are called when the variable is evaluated.
 
 ```php
 use Daun\StatamicCacheConditions\CacheDirectiveReplacer;
@@ -192,19 +192,19 @@ class AppServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        CacheDirectiveReplacer::hook('conditions', function (array $conditions, Closure $next) {
-            $conditions['editor'] = fn () => auth()->user()?->hasRole('editor') ?? false;
-            $conditions['member'] = fn () => auth()->user()?->groups()->has('members') ?? false;
-            $conditions['has_cart'] = fn () => (bool) session('cart.items');
-            $conditions['in_uk'] = fn () => new \GeoIp2\Database\Reader()->city(request()->getClientIp())->country->isoCode === 'UK';
+        CacheDirectiveReplacer::hook('variables', function (array $variables, Closure $next) {
+            $variables['editor'] = fn () => auth()->user()?->roles()->has('editor') ?? false;
+            $variables['member'] = fn () => auth()->user()?->groups()->has('members') ?? false;
+            $variables['has_cart'] = fn () => (bool) session('cart.items');
+            $variables['in_uk'] = fn () => new \GeoIp2\Database\Reader()->city(request()->getClientIp())->country->isoCode === 'UK';
 
-            return $next($conditions);
+            return $next($variables);
         });
     }
 }
 ```
 
-Then use those names in comments:
+Then use those variables in comments:
 
 ```html
 <!--[if editor]-->

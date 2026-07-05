@@ -18,22 +18,22 @@ class CacheDirectiveReplacer implements Replacer
     private const PATTERN = '/<!--\[(if|unless)\s+([^\]]+)\]-->(.*?)<!--\[end\1\]-->/is';
 
     /** @var array<string, \Closure|mixed> */
-    protected array $conditions = [];
+    protected array $variables = [];
 
     public function __construct()
     {
-        $this->conditions = $this->getConditions();
+        $this->variables = $this->getVariables();
     }
 
-    protected function getConditions(): array
+    protected function getVariables(): array
     {
-        $conditions = [
+        $variables = [
             'logged_in' => fn () => $this->auth()->check(),
             'logged_out' => fn () => ! $this->auth()->check(),
             'super' => fn () => $this->auth()->user()?->isSuper() ?? false,
         ];
 
-        return $this->runHooks('conditions', $conditions);
+        return $this->runHooks('variables', $variables);
     }
 
     public function prepareResponseToCache(Response $cachedResponse, Response $response)
@@ -101,12 +101,12 @@ class CacheDirectiveReplacer implements Replacer
             return ! $this->evaluateExpression(Str::chopStart($expression, ['!', 'not ']));
         }
 
-        // Evaluate existing variables/conditions
-        if (! isset($this->conditions[$expression])) {
-            throw new \InvalidArgumentException("Unknown condition in conditional comment: {$expression}");
+        // Evaluate existing variables
+        if (! isset($this->variables[$expression])) {
+            throw new \InvalidArgumentException("Unknown variable in cache directive: {$expression}");
         }
 
-        $value = $this->conditions[$expression] ?? null;
+        $value = $this->variables[$expression] ?? null;
         if ($value instanceof \Closure) {
             $value = $value();
         }
