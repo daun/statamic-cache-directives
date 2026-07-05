@@ -18,7 +18,8 @@
     "homepage": "https://github.com/daun/statamic-cache-directives",
     "require": {
         "php": "^8.4",
-        "statamic/cms": "^5.0 || ^6.0"
+        "statamic/cms": "^5.0 || ^6.0",
+        "symfony/expression-language": "^7.4 || ^8.0"
     },
     "require-dev": {
         "larastan/larastan": "^2.9 || ^3.0",

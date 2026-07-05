@@ -18,23 +18,23 @@ class CacheDirectiveReplacer implements Replacer
     private const IGNORE_PATTERN = '/<!--\[cache-directives-ignore\]-->(.*?)<!--\[cache-directives-endignore\]-->/is';
 
     private const PATTERNS = [
-        '/<!--\[(if|unless)\s+([^\]]+)\]-->(.*?)<!--\[end\1\]-->/is',
-        '/<!--\[(if|unless)\s+([^\]]+)\]>(.*?)<!\[end\1\]-->/is',
+        '/<!--\[(if|unless)\s+(.+?)\]-->(.*?)<!--\[end\1\]-->/is',
+        '/<!--\[(if|unless)\s+(.+?)\]>(.*?)<!\[end\1\]-->/is',
     ];
 
     private const RAW_PATTERNS = [
-        '/<!--\[raw\s+([^\]]+)\]-->(.*?)<!--\[endraw\]-->/is',
-        '/<!--\[raw\s+([^\]]+)\]>(.*?)<!\[endraw\]-->/is',
+        '/<!--\[raw\s+(.+?)\]-->(.*?)<!--\[endraw\]-->/is',
+        '/<!--\[raw\s+(.+?)\]>(.*?)<!\[endraw\]-->/is',
     ];
 
-    private const RAW_INLINE_PATTERN = '/<!--\[raw\s+([^\]]+)\]-->/i';
+    private const RAW_INLINE_PATTERN = '/<!--\[raw\s+(.+?)\]-->/i';
 
     private const ECHO_PATTERNS = [
-        '/<!--\[echo\s+([^\]]+)\]-->(.*?)<!--\[endecho\]-->/is',
-        '/<!--\[echo\s+([^\]]+)\]>(.*?)<!\[endecho\]-->/is',
+        '/<!--\[echo\s+(.+?)\]-->(.*?)<!--\[endecho\]-->/is',
+        '/<!--\[echo\s+(.+?)\]>(.*?)<!\[endecho\]-->/is',
     ];
 
-    private const ECHO_INLINE_PATTERN = '/<!--\[echo\s+([^\]]+)\]-->/i';
+    private const ECHO_INLINE_PATTERN = '/<!--\[echo\s+(.+?)\]-->/i';
 
     /** @var array<string, \Closure|mixed> */
     protected array $variables = [];

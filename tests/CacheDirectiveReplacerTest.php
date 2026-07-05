@@ -188,6 +188,31 @@ it('parses directives with parenthesized subexpressions', function () {
         ->and($replacer->parse('<!--[if (truthy | falsy) & falsy]-->Hidden<!--[endif]-->'))->toBe('');
 });
 
+it('parses nested array keys and object methods', function () {
+    $user = new class
+    {
+        public object $profile;
+
+        public function __construct()
+        {
+            $this->profile = (object) ['active' => true];
+        }
+
+        public function isSuper(): bool
+        {
+            return true;
+        }
+    };
+
+    $replacer = replacerWithVariables([
+        'settings' => ['cache' => ['enabled' => true]],
+        'user' => $user,
+    ]);
+
+    expect($replacer->parse('<!--[if settings["cache"]["enabled"] and user.isSuper()]-->Visible<!--[endif]-->'))
+        ->toBe('Visible');
+});
+
 it('calls closure backed condition variables', function () {
     $called = false;
 

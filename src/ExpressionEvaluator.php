@@ -2,14 +2,19 @@
 
 namespace Daun\StatamicCacheDirectives;
 
-use Statamic\Support\Str;
+use Symfony\Component\ExpressionLanguage\ExpressionLanguage as SymfonyExpressionLanguage;
+use Symfony\Component\ExpressionLanguage\SyntaxError;
 
 class ExpressionEvaluator
 {
+    protected SymfonyExpressionLanguage $language;
+
     /** @param array<string, \Closure|mixed> $variables */
     public function __construct(
         protected array $variables = [],
-    ) {}
+    ) {
+        $this->language = new SymfonyExpressionLanguage;
+    }
 
     public function evaluate(string $expression, string $operator = 'if'): bool
     {
@@ -17,36 +22,12 @@ class ExpressionEvaluator
             return ! $this->evaluate($expression, 'if');
         }
 
-        $expression = trim($expression);
-        $this->assertBalancedParentheses($expression);
-        $expression = $this->unwrapParentheses($expression);
-
-        // Handle OR groups (|)
-        if ($parts = $this->splitTopLevel($expression, '|')) {
-            return collect($parts)
-                ->map(fn ($exp) => $this->evaluate($exp))
-                ->some(fn ($result) => (bool) $result);
-        }
-
-        // Handle AND groups (&)
-        if ($parts = $this->splitTopLevel($expression, '&')) {
-            return collect($parts)
-                ->map(fn ($exp) => $this->evaluate($exp))
-                ->every(fn ($result) => (bool) $result);
-        }
-
-        // Handle negated expressions (!)
-        if (Str::startsWith($expression, ['!', 'not '])) {
-            return ! $this->evaluate(Str::chopStart($expression, ['!', 'not ']));
-        }
-
-        return (bool) $this->getVariableValue($expression);
+        return (bool) $this->evaluateValue($expression);
     }
 
     public function echo(string $expression, bool $escape = true): string
     {
-        $expression = trim($expression);
-        $value = $this->getVariableValue($expression);
+        $value = $this->evaluateValue($expression);
 
         if ($value === null) {
             return '';
@@ -62,99 +43,37 @@ class ExpressionEvaluator
             return $escape ? e($string) : $string;
         }
 
-        throw new \InvalidArgumentException("Cannot echo non-scalar variable in cache directive: {$expression}");
+        throw new \InvalidArgumentException("Cannot echo non-scalar expression in cache directive: {$expression}");
     }
 
-    private function getVariableValue(string $expression): mixed
+    private function evaluateValue(string $expression): mixed
     {
-        if (! isset($this->variables[$expression])) {
-            throw new \InvalidArgumentException("Unknown variable in cache directive: {$expression}");
+        $expression = trim($expression);
+
+        try {
+            return $this->language->evaluate($expression, $this->resolvedVariables());
+        } catch (SyntaxError $e) {
+            throw new \InvalidArgumentException($this->messageForSyntaxError($e, $expression), previous: $e);
+        } catch (\RuntimeException $e) {
+            throw new \InvalidArgumentException("Invalid expression in cache directive: {$expression}", previous: $e);
         }
-
-        $value = $this->variables[$expression] ?? null;
-
-        return $value instanceof \Closure ? $value() : $value;
     }
 
-    /** @return null|array<int, string> */
-    private function splitTopLevel(string $expression, string $operator): ?array
+    /** @return array<string, mixed> */
+    private function resolvedVariables(): array
     {
-        $parts = [];
-        $depth = 0;
-        $start = 0;
-        $length = strlen($expression);
-
-        for ($i = 0; $i < $length; $i++) {
-            if ($expression[$i] === '(') {
-                $depth++;
-            } elseif ($expression[$i] === ')') {
-                $depth--;
-            } elseif ($expression[$i] === $operator && $depth === 0) {
-                $parts[] = substr($expression, $start, $i - $start);
-                $start = $i + 1;
-            }
-        }
-
-        if ($parts === []) {
-            return null;
-        }
-
-        $parts[] = substr($expression, $start);
-
-        return $parts;
+        return array_map(
+            fn (mixed $value): mixed => $value instanceof \Closure ? $value() : $value,
+            $this->variables,
+        );
     }
 
-    private function unwrapParentheses(string $expression): string
+    private function messageForSyntaxError(SyntaxError $error, string $expression): string
     {
-        while ($this->isWrappedInParentheses($expression)) {
-            $expression = trim(substr($expression, 1, -1));
+        if (preg_match('/Variable "([^"]+)" is not valid/', $error->getMessage(), $matches) === 1) {
+            return "Unknown variable in cache directive: {$matches[1]}";
         }
 
-        return $expression;
-    }
-
-    private function isWrappedInParentheses(string $expression): bool
-    {
-        if (! str_starts_with($expression, '(')) {
-            return false;
-        }
-
-        $depth = 0;
-        $last = strlen($expression) - 1;
-
-        for ($i = 0; $i <= $last; $i++) {
-            if ($expression[$i] === '(') {
-                $depth++;
-            } elseif ($expression[$i] === ')') {
-                $depth--;
-
-                if ($depth === 0) {
-                    return $i === $last;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    private function assertBalancedParentheses(string $expression): void
-    {
-        $depth = 0;
-
-        for ($i = 0; $i < strlen($expression); $i++) {
-            if ($expression[$i] === '(') {
-                $depth++;
-            } elseif ($expression[$i] === ')') {
-                $depth--;
-            }
-
-            if ($depth < 0) {
-                throw new \InvalidArgumentException("Unmatched parentheses in cache directive: {$expression}");
-            }
-        }
-
-        if ($depth !== 0) {
-            throw new \InvalidArgumentException("Unmatched parentheses in cache directive: {$expression}");
-        }
+        return "Invalid expression in cache directive: {$expression}";
     }
 }

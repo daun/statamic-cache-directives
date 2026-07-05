@@ -46,6 +46,8 @@ The second format follows the [downlevel-hidden syntax](https://learn.microsoft.
 
 ## Syntax
 
+Expressions use [Symfony ExpressionLanguage syntax](https://symfony.com/doc/current/reference/formats/expression_language.html).
+
 ### If
 
 ```html
@@ -86,20 +88,20 @@ Use either `!` or `not`.
 
 ### And
 
-Use `&`.
+Use `and` or `&&`.
 
 ```html
-<!--[if logged_in & super]-->
+<!--[if logged_in and super]-->
   <a href="/cp">Control Panel</a>
 <!--[endif]-->
 ```
 
 ### Or
 
-Use `|`.
+Use `or` or `||`.
 
 ```html
-<!--[if logged_out | super]-->
+<!--[if logged_out or super]-->
   <script src="/js/public-preview.js"></script>
 <!--[endif]-->
 ```
@@ -118,7 +120,7 @@ Use `echo` to print a variable value. Echo directives can be standalone or block
 
 ### Raw
 
-Use `raw` to print a variable value *ithout escaping. Use this only for values you fully control as printing untrusted data with `raw` is an XSS vector.
+Use `raw` to print a variable value without escaping. Use this only for values you fully control as printing untrusted data with `raw` is an XSS vector.
 
 ```html
 <!--[raw safe_svg_icon]-->
@@ -141,6 +143,16 @@ Use `raw` to print a variable value *ithout escaping. Use this only for values y
 
 <!--[if !(logged_in & super)]-->
   <p>Visible unless signed in as a super admin.</p>
+<!--[endif]-->
+```
+
+### Nested data and object methods
+
+Expressions use Symfony ExpressionLanguage syntax. Use `[]` for array keys and `.` for object properties or methods.
+
+```html
+<!--[if cart["totals"]["items"] > 0 and customer.canCheckout()]-->
+  <a href="/checkout">Checkout (<!--[echo cart["totals"]["items"]]-->)</a>
 <!--[endif]-->
 ```
 
@@ -223,7 +235,7 @@ Authentication uses Statamic's configured control-panel guard: `config('statamic
 ## Custom variables
 
 Add your own variable names with the `variables` hook. Register the hook during application boot, for example in `app/Providers/AppServiceProvider.php`.
-Values can be scalar values or closures that are called when the variable is evaluated.
+Values can be scalar values, arrays, objects, or closures that are called when the variable is evaluated.
 
 ```php
 use Daun\StatamicCacheDirectives\CacheDirectiveReplacer;

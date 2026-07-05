@@ -19,15 +19,15 @@ it('evaluates expressions with or and and operators', function (string $expressi
     'ampersand and false' => ['truthy & falsy', false],
 ]);
 
-it('does not support double boolean operators', function (string $expression) {
-    evaluator([
+it('evaluates double boolean operators', function (string $expression, bool $expected) {
+    expect(evaluator([
         'truthy' => true,
         'falsy' => false,
-    ])->evaluate($expression);
+    ])->evaluate($expression))->toBe($expected);
 })->with([
-    'double pipe' => ['falsy || truthy'],
-    'double ampersand' => ['truthy && falsy'],
-])->throws(InvalidArgumentException::class, 'Unknown variable in cache directive: ');
+    'double pipe' => ['falsy || truthy', true],
+    'double ampersand' => ['truthy && falsy', false],
+]);
 
 it('evaluates negated expressions', function (string $expression, bool $expected) {
     expect(evaluator([
@@ -66,11 +66,41 @@ it('throws for unbalanced subexpressions', function (string $expression) {
 })->with([
     'missing closing parenthesis' => ['(truthy'],
     'missing opening parenthesis' => ['truthy)'],
-])->throws(InvalidArgumentException::class, 'Unmatched parentheses in cache directive:');
+])->throws(InvalidArgumentException::class, 'Invalid expression in cache directive:');
 
 it('throws for unknown variables', function () {
     evaluator()->evaluate('missing');
 })->throws(InvalidArgumentException::class, 'Unknown variable in cache directive: missing');
+
+it('evaluates nested array keys', function () {
+    expect(evaluator([
+        'user' => [
+            'profile' => [
+                'active' => true,
+                'score' => 42,
+            ],
+        ],
+    ])->evaluate('user["profile"]["active"] and user["profile"]["score"] >= 40'))->toBeTrue();
+});
+
+it('evaluates object properties and methods', function () {
+    $user = new class
+    {
+        public object $profile;
+
+        public function __construct()
+        {
+            $this->profile = (object) ['active' => true];
+        }
+
+        public function isSuper(): bool
+        {
+            return true;
+        }
+    };
+
+    expect(evaluator(['user' => $user])->evaluate('user.profile.active and user.isSuper()'))->toBeTrue();
+});
 
 it('inverts conditions for the unless operator', function () {
     $evaluator = evaluator([
