@@ -37,10 +37,12 @@ Wrap markup in conditional comments. Matching blocks are kept when their express
   <a href="/account">Account</a>
 <!--[endif]-->
 
-<!--[if logged_out]-->
+<!--[if logged_out]>
   <a href="/login">Log in</a>
-<!--[endif]-->
+<![endif]-->
 ```
+
+The second format follows the [downlevel-hidden syntax](https://learn.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/compatibility/ms537512(v=vs.85)#syntax-of-conditional-comments) for conditional comments.
 
 ## Syntax
 
@@ -50,6 +52,10 @@ Wrap markup in conditional comments. Matching blocks are kept when their express
 <!--[if logged_in]-->
   <p>Visible to signed-in users.</p>
 <!--[endif]-->
+
+<!--[if logged_in]>
+  <p>Visible to signed-in users, hidden if unprocessed.</p>
+<![endif]-->
 ```
 
 ### Unless
@@ -58,6 +64,10 @@ Wrap markup in conditional comments. Matching blocks are kept when their express
 <!--[unless logged_in]-->
   <p>Visible to guests.</p>
 <!--[endunless]-->
+
+<!--[unless logged_in]>
+  <p>Visible to guests, hidden if unprocessed.</p>
+<![endunless]-->
 ```
 
 ### Not

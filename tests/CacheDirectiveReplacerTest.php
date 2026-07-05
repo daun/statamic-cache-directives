@@ -69,6 +69,32 @@ it('inverts conditions for unless directives', function () {
     expect($replacer->parse('<!--[unless enabled]-->Hidden<!--[endunless]-->'))->toBe('');
 });
 
+it('keeps matching hidden conditional comments and removes comment wrappers', function () {
+    $replacer = replacerWithVariables(['feature_enabled' => true]);
+
+    $content = 'Before <!--[if feature_enabled]>Visible<![endif]--> After';
+
+    expect($replacer->parse($content))->toBe('Before Visible After');
+});
+
+it('removes non matching hidden conditional comments', function () {
+    $replacer = replacerWithVariables(['feature_enabled' => false]);
+
+    $content = 'Before <!--[if feature_enabled]>Hidden<![endif]--> After';
+
+    expect($replacer->parse($content))->toBe('Before  After');
+});
+
+it('supports unless hidden conditional comments', function () {
+    $replacer = replacerWithVariables([
+        'enabled' => true,
+        'disabled' => false,
+    ]);
+
+    expect($replacer->parse('<!--[unless disabled]>Visible<![endunless]-->'))->toBe('Visible');
+    expect($replacer->parse('<!--[unless enabled]>Hidden<![endunless]-->'))->toBe('');
+});
+
 it('evaluates directive expressions with or and and operators', function (string $expression, bool $expected) {
     $replacer = replacerWithVariables([
         'truthy' => true,

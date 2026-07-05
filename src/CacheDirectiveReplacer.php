@@ -15,7 +15,10 @@ class CacheDirectiveReplacer implements Replacer
 
     private const IGNORE = ['<!--[if mso]>', '<!--[conditional-comments-ignore]-->'];
 
-    private const PATTERN = '/<!--\[(if|unless)\s+([^\]]+)\]-->(.*?)<!--\[end\1\]-->/is';
+    private const PATTERNS = [
+        '/<!--\[(if|unless)\s+([^\]]+)\]-->(.*?)<!--\[end\1\]-->/is',
+        '/<!--\[(if|unless)\s+([^\]]+)\]>(.*?)<!\[end\1\]-->/is',
+    ];
 
     /** @var array<string, \Closure|mixed> */
     protected array $variables = [];
@@ -65,13 +68,17 @@ class CacheDirectiveReplacer implements Replacer
             return $content;
         }
 
-        return preg_replace_callback(self::PATTERN, function (array $matches) {
-            [, $operator, $expression, $content] = $matches;
+        foreach (self::PATTERNS as $pattern) {
+            $content = preg_replace_callback($pattern, function (array $matches) {
+                [, $operator, $expression, $content] = $matches;
 
-            return $this->evaluateExpression($expression, operator: $operator)
-                ? $content
-                : '';
-        }, $content);
+                return $this->evaluateExpression($expression, operator: $operator)
+                    ? $content
+                    : '';
+            }, $content) ?? $content;
+        }
+
+        return $content;
     }
 
     public function evaluateExpression(string $expression, string $operator = 'if'): bool
