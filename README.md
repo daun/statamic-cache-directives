@@ -106,7 +106,7 @@ Use `|`.
 
 ### Echo
 
-Use `echo` to print a variable value. Echo directives can be standalone or block-style. **Output is HTML-escaped by default**, so it is safe to echo untrusted values.
+Use `echo` to print a variable value. Echo directives can be standalone or block-style. Output is escaped for html contexts.
 
 ```html
 <a href="/account" data-cache="<!--[echo cache_status]-->">
@@ -118,7 +118,7 @@ Use `echo` to print a variable value. Echo directives can be standalone or block
 
 ### Raw
 
-Use `raw` to print a variable value **without escaping**. Only use this for values you fully control and know to be safe HTML — printing untrusted data with `raw` is an XSS vector.
+Use `raw` to print a variable value *ithout escaping. Use this only for values you fully control as printing untrusted data with `raw` is an XSS vector.
 
 ```html
 <!--[raw safe_svg_icon]-->
