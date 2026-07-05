@@ -86,7 +86,7 @@ Use either `!` or `not`.
 
 ### And
 
-Use `&` or `&&`.
+Use `&`.
 
 ```html
 <!--[if logged_in & super]-->
@@ -96,7 +96,7 @@ Use `&` or `&&`.
 
 ### Or
 
-Use `|` or `||`.
+Use `|`.
 
 ```html
 <!--[if logged_out | super]-->
@@ -106,7 +106,7 @@ Use `|` or `||`.
 
 ### Combined expressions
 
-`&`/`&&` groups are evaluated inside `|`/`||` groups. Parentheses are not supported.
+`&` groups are evaluated inside `|` groups. Parentheses are not supported.
 
 ```html
 <!--[if logged_out | logged_in & super]-->
@@ -185,7 +185,7 @@ Authentication uses Statamic's configured control-panel guard: `config('statamic
 ### Load admin-only JavaScript
 
 ```html
-<!--[if logged_in && super]-->
+<!--[if logged_in & super]-->
   <script type="module" src="/build/admin-overlay.js"></script>
 <!--[endif]-->
 ```

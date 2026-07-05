@@ -103,12 +103,23 @@ it('evaluates directive expressions with or and and operators', function (string
 
     expect($replacer->evaluateExpression($expression))->toBe($expected);
 })->with([
-    'single pipe or true' => ['truthy | falsy', true],
-    'double pipe or true' => ['falsy || truthy', true],
+    'pipe or true' => ['truthy | falsy', true],
     'or false' => ['falsy | falsy', false],
-    'single ampersand and true' => ['truthy & truthy', true],
-    'double ampersand and false' => ['truthy && falsy', false],
+    'ampersand and true' => ['truthy & truthy', true],
+    'ampersand and false' => ['truthy & falsy', false],
 ]);
+
+it('does not support double boolean operators', function (string $expression) {
+    $replacer = replacerWithVariables([
+        'truthy' => true,
+        'falsy' => false,
+    ]);
+
+    $replacer->evaluateExpression($expression);
+})->with([
+    'double pipe' => ['falsy || truthy'],
+    'double ampersand' => ['truthy && falsy'],
+])->throws(InvalidArgumentException::class, 'Unknown variable in cache directive: ');
 
 it('evaluates negated directive expressions', function (string $expression, bool $expected) {
     $replacer = replacerWithVariables([

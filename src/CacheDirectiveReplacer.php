@@ -90,15 +90,15 @@ class CacheDirectiveReplacer implements Replacer
         $expression = trim($expression);
 
         // Handle OR groups (|)
-        if (Str::contains($expression, ['|', '||'])) {
-            return collect(preg_split('/[|]{1,2}/', $expression))
+        if (Str::contains($expression, '|')) {
+            return collect(explode('|', $expression))
                 ->map(fn ($exp) => $this->evaluateExpression($exp))
                 ->some(fn ($result) => (bool) $result);
         }
 
         // Handle AND groups (&)
-        if (Str::contains($expression, ['&', '&&'])) {
-            return collect(preg_split('/[&]{1,2}/', $expression))
+        if (Str::contains($expression, '&')) {
+            return collect(explode('&', $expression))
                 ->map(fn ($exp) => $this->evaluateExpression($exp))
                 ->every(fn ($result) => (bool) $result);
         }
