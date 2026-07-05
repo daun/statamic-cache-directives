@@ -1,0 +1,56 @@
+{
+    "name": "daun/statamic-cache-conditions",
+    "description": "Parse conditional comments for dynamic islands in cached pages",
+    "license": "MIT",
+    "keywords": [
+        "statamic",
+        "cache"
+    ],
+    "authors": [
+        {
+            "name": "Philipp Daun",
+            "email": "post@philippdaun.net",
+            "homepage": "https://philippdaun.net"
+        }
+    ],
+    "homepage": "https://github.com/daun/statamic-cache-conditions",
+    "require": {
+        "php": "^8.4",
+        "statamic/cms": "^5.0 || ^6.0"
+    },
+    "require-dev": {
+        "larastan/larastan": "^2.9",
+        "laravel/pint": "^1.14",
+        "mockery/mockery": "^1.6",
+        "orchestra/testbench": "^9.5",
+        "pestphp/pest": "^3.5",
+        "pestphp/pest-plugin-laravel": "^3.0"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "Daun\\StatamicCacheConditions\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "pixelfear/composer-dist-plugin": true
+        },
+        "sort-packages": true
+    },
+    "scripts": {
+        "analyse": "./vendor/bin/phpstan analyse --memory-limit=2G",
+        "format": "./vendor/bin/pint",
+        "lint": "./vendor/bin/pint --test",
+        "test": "./vendor/bin/pest",
+        "test:ci": "./vendor/bin/pest --coverage-clover coverage.xml",
+        "test:coverage": "./vendor/bin/pest --coverage"
+    }
+}
