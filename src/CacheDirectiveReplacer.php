@@ -1,13 +1,13 @@
 <?php
 
-namespace Daun\StatamicCacheConditions;
+namespace Daun\StatamicCacheDirectives;
 
 use Illuminate\Http\Response;
 use Statamic\StaticCaching\Replacer;
 use Statamic\Support\Str;
 use Statamic\Support\Traits\Hookable;
 
-class CacheConditionReplacer implements Replacer
+class CacheDirectiveReplacer implements Replacer
 {
     use Hookable;
 

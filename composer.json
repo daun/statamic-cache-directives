@@ -1,10 +1,12 @@
 {
-    "name": "daun/statamic-cache-conditions",
-    "description": "Parse conditional comments for dynamic islands in cached pages",
+    "name": "daun/statamic-cache-directives",
+    "description": "Parse conditional comments for dynamic fragments in cached Statamic pages",
     "license": "MIT",
     "keywords": [
         "statamic",
-        "cache"
+        "cache",
+        "directives",
+        "static-caching"
     ],
     "authors": [
         {
@@ -13,7 +15,7 @@
             "homepage": "https://philippdaun.net"
         }
     ],
-    "homepage": "https://github.com/daun/statamic-cache-conditions",
+    "homepage": "https://github.com/daun/statamic-cache-directives",
     "require": {
         "php": "^8.4",
         "statamic/cms": "^5.0 || ^6.0"
@@ -30,7 +32,7 @@
     "prefer-stable": true,
     "autoload": {
         "psr-4": {
-            "Daun\\StatamicCacheConditions\\": "src/"
+            "Daun\\StatamicCacheDirectives\\": "src/"
         }
     },
     "autoload-dev": {

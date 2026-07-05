@@ -6,4 +6,4 @@ All notable changes to this package will be documented in this file.
 
 - Initial release
 
-[1.0.0]: https://github.com/daun/statamic-cache-conditions/releases/tag/1.0.0
+[1.0.0]: https://github.com/daun/statamic-cache-directives/releases/tag/1.0.0

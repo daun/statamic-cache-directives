@@ -1,6 +1,6 @@
-# Statamic Cache Conditions
+# Statamic Cache Directives
 
-Parse conditional html comments after Statamic has rendered a page, so cached pages can still include small dynamic fragments.
+Parse conditional HTML comment directives after Statamic has rendered a page, so cached pages can still include small dynamic fragments.
 
 This package is a lightweight alternative to Statamic's [`nocache`](https://statamic.dev/tags/nocache) tag. It is useful for tiny auth-, role-, or request-dependent islands where you only need to keep or remove existing markup without the overhead of the nocache data/session pipeline.
 
@@ -11,7 +11,7 @@ It is implemented as a [static caching replacer](https://statamic.dev/advanced-t
 Install the package via composer:
 
 ```bash
-composer require daun/statamic-cache-conditions
+composer require daun/statamic-cache-directives
 ```
 
 ## Registration
@@ -19,14 +19,12 @@ composer require daun/statamic-cache-conditions
 Enable the replacer in `config/statamic/static_caching.php`.
 
 ```diff
-+ use Daun\StatamicCacheConditions\CacheConditionReplacer;
-  use Statamic\StaticCaching\Replacers\CsrfTokenReplacer;
-  use Statamic\StaticCaching\Replacers\NoCacheReplacer;
++ use Daun\StatamicCacheDirectives\CacheDirectiveReplacer;
 
   'replacers' => [
       CsrfTokenReplacer::class,
       NoCacheReplacer::class,
-+     CacheConditionReplacer::class,
++     CacheDirectiveReplacer::class,
   ],
 ```
 
@@ -110,6 +108,8 @@ Unknown condition names throw an `InvalidArgumentException`, so typos fail loudl
 
 ## Built-in conditions
 
+These condition directives are available by default:
+
 - `logged_in`: Current Statamic user is authenticated.
 - `logged_out`: Current Statamic user is not authenticated.
 - `super`: Current Statamic user is a super admin.
@@ -186,13 +186,13 @@ Add your own condition names with the `conditions` hook. Register the hook durin
 Values can be scalar values or closures that are called when the condition is evaluated.
 
 ```php
-use Daun\StatamicCacheConditions\CacheConditionReplacer;
+use Daun\StatamicCacheConditions\CacheDirectiveReplacer;
 
 class AppServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        CacheConditionReplacer::hook('conditions', function (array $conditions, Closure $next) {
+        CacheDirectiveReplacer::hook('conditions', function (array $conditions, Closure $next) {
             $conditions['editor'] = fn () => auth()->user()?->hasRole('editor') ?? false;
             $conditions['member'] = fn () => auth()->user()?->groups()->has('members') ?? false;
             $conditions['has_cart'] = fn () => (bool) session('cart.items');
@@ -207,7 +207,7 @@ class AppServiceProvider extends ServiceProvider
 Then use those names in comments:
 
 ```html
-<!--[if editorZ]-->
+<!--[if editor]-->
   <a href="{{ edit_url }}">Edit</a>
 <!--[endif]-->
 
