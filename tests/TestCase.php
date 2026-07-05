@@ -2,6 +2,13 @@
 
 namespace Tests;
 
-use Statamic\Testing\AddonTestCase;
+use Orchestra\Testbench\TestCase as OrchestraTestCase;
+use Statamic\Providers\StatamicServiceProvider;
 
-class TestCase extends AddonTestCase {}
+class TestCase extends OrchestraTestCase
+{
+    protected function getPackageProviders($app): array
+    {
+        return [StatamicServiceProvider::class];
+    }
+}
