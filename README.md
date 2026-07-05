@@ -104,6 +104,18 @@ Use `|`.
 <!--[endif]-->
 ```
 
+### Echo
+
+Use `echo` to print a variable value. Echo directives can be standalone or block-style. Values are inserted as raw text, so escape untrusted values before returning them from a variable hook.
+
+```html
+<a href="/account" data-cache="<!--[echo cache_status]-->">
+  <!--[echo account_label]-->
+</a>
+
+<!--[echo cache_status]>Unknown<![endecho]-->
+```
+
 ### Combined expressions
 
 `&` groups are evaluated inside `|` groups. Use parentheses to group subexpressions or override precedence.

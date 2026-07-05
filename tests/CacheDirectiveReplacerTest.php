@@ -95,6 +95,46 @@ it('supports unless hidden conditional comments', function () {
     expect($replacer->parse('<!--[unless enabled]>Hidden<![endunless]-->'))->toBe('');
 });
 
+it('replaces standalone echo directives', function () {
+    $replacer = replacerWithVariables([
+        'debug' => 'cache-hit',
+        'count' => 3,
+        'enabled' => true,
+        'disabled' => false,
+    ]);
+
+    expect($replacer->parse('<a data-cache="<!--[echo debug]-->"><!--[echo count]--></a>'))
+        ->toBe('<a data-cache="cache-hit">3</a>')
+        ->and($replacer->parse('<!--[echo enabled]--> <!--[echo disabled]-->'))
+        ->toBe('true false');
+});
+
+it('replaces block echo directives', function () {
+    $replacer = replacerWithVariables([
+        'label' => 'Debug link',
+        'debug' => 'cache-hit',
+    ]);
+
+    expect($replacer->parse('<a><!--[echo label]-->Fallback<!--[endecho]--></a>'))
+        ->toBe('<a>Debug link</a>')
+        ->and($replacer->parse('<!--[echo debug]>Fallback<![endecho]-->'))
+        ->toBe('cache-hit');
+});
+
+it('does not evaluate echo directives inside removed conditions', function () {
+    $replacer = replacerWithVariables([
+        'enabled' => false,
+    ]);
+
+    expect($replacer->parse('<!--[if enabled]--><!--[echo missing]--><!--[endif]-->'))->toBe('');
+});
+
+it('throws for unknown echo variables', function () {
+    $replacer = replacerWithVariables();
+
+    $replacer->parse('<!--[echo missing]-->');
+})->throws(InvalidArgumentException::class, 'Unknown variable in cache directive: missing');
+
 it('evaluates directive expressions with or and and operators', function (string $expression, bool $expected) {
     $replacer = replacerWithVariables([
         'truthy' => true,

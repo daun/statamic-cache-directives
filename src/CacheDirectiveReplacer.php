@@ -20,6 +20,13 @@ class CacheDirectiveReplacer implements Replacer
         '/<!--\[(if|unless)\s+([^\]]+)\]>(.*?)<!\[end\1\]-->/is',
     ];
 
+    private const ECHO_PATTERNS = [
+        '/<!--\[echo\s+([^\]]+)\]-->(.*?)<!--\[endecho\]-->/is',
+        '/<!--\[echo\s+([^\]]+)\]>(.*?)<!\[endecho\]-->/is',
+    ];
+
+    private const ECHO_INLINE_PATTERN = '/<!--\[echo\s+([^\]]+)\]-->/i';
+
     /** @var array<string, \Closure|mixed> */
     protected array $variables = [];
 
@@ -78,6 +85,20 @@ class CacheDirectiveReplacer implements Replacer
             }, $content) ?? $content;
         }
 
+        foreach (self::ECHO_PATTERNS as $pattern) {
+            $content = preg_replace_callback($pattern, function (array $matches) {
+                [, $expression] = $matches;
+
+                return $this->evaluateEcho($expression);
+            }, $content) ?? $content;
+        }
+
+        $content = preg_replace_callback(self::ECHO_INLINE_PATTERN, function (array $matches) {
+            [, $expression] = $matches;
+
+            return $this->evaluateEcho($expression);
+        }, $content) ?? $content;
+
         return $content;
     }
 
@@ -110,17 +131,38 @@ class CacheDirectiveReplacer implements Replacer
             return ! $this->evaluateExpression(Str::chopStart($expression, ['!', 'not ']));
         }
 
-        // Evaluate existing variables
+        return (bool) $this->getVariableValue($expression);
+    }
+
+    public function evaluateEcho(string $expression): string
+    {
+        $expression = trim($expression);
+        $value = $this->getVariableValue($expression);
+
+        if ($value === null) {
+            return '';
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        if (is_scalar($value) || $value instanceof \Stringable) {
+            return (string) $value;
+        }
+
+        throw new \InvalidArgumentException("Cannot echo non-scalar variable in cache directive: {$expression}");
+    }
+
+    private function getVariableValue(string $expression): mixed
+    {
         if (! isset($this->variables[$expression])) {
             throw new \InvalidArgumentException("Unknown variable in cache directive: {$expression}");
         }
 
         $value = $this->variables[$expression] ?? null;
-        if ($value instanceof \Closure) {
-            $value = $value();
-        }
 
-        return (bool) $value;
+        return $value instanceof \Closure ? $value() : $value;
     }
 
     /** @return null|array<int, string> */
