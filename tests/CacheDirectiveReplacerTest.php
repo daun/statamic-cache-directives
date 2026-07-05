@@ -129,11 +129,50 @@ it('does not evaluate echo directives inside removed conditions', function () {
     expect($replacer->parse('<!--[if enabled]--><!--[echo missing]--><!--[endif]-->'))->toBe('');
 });
 
-it('throws for unknown echo variables', function () {
+it('throws for unknown echo variables in debug mode', function () {
+    config(['app.debug' => true]);
+
     $replacer = replacerWithVariables();
 
     $replacer->parse('<!--[echo missing]-->');
 })->throws(InvalidArgumentException::class, 'Unknown variable in cache directive: missing');
+
+it('removes failing directives instead of throwing outside debug mode', function () {
+    config(['app.debug' => false]);
+
+    $replacer = replacerWithVariables(['enabled' => true]);
+
+    expect($replacer->parse('Before <!--[echo missing]--> After'))->toBe('Before  After')
+        ->and($replacer->parse('Before <!--[if missing]-->X<!--[endif]--> After'))->toBe('Before  After')
+        ->and($replacer->parse('Before <!--[if enabled]-->Kept<!--[endif]--> After'))->toBe('Before Kept After');
+});
+
+it('isolates a failing directive from surrounding valid directives', function () {
+    config(['app.debug' => false]);
+
+    $replacer = replacerWithVariables(['enabled' => true]);
+
+    // A poisoned directive (e.g. injected via user content) must not abort
+    // parsing of the rest of the response.
+    $content = '<!--[if enabled]-->A<!--[endif]--><!--[if injected]-->B<!--[endif]--><!--[if enabled]-->C<!--[endif]-->';
+
+    expect($replacer->parse($content))->toBe('AC');
+});
+
+it('escapes echo output by default', function () {
+    $replacer = replacerWithVariables(['name' => '<script>alert(1)</script>']);
+
+    expect($replacer->parse('<!--[echo name]-->'))
+        ->toBe('&lt;script&gt;alert(1)&lt;/script&gt;');
+});
+
+it('does not escape raw output', function () {
+    $replacer = replacerWithVariables(['snippet' => '<b>hi</b>']);
+
+    expect($replacer->parse('<!--[raw snippet]-->'))->toBe('<b>hi</b>')
+        ->and($replacer->parse('<x><!--[raw snippet]-->Fallback<!--[endraw]--></x>'))->toBe('<x><b>hi</b></x>')
+        ->and($replacer->parse('<!--[raw snippet]>Fallback<![endraw]-->'))->toBe('<b>hi</b>');
+});
 
 it('evaluates directive expressions with or and and operators', function (string $expression, bool $expected) {
     $replacer = replacerWithVariables([
@@ -278,14 +317,42 @@ it('leaves content unchanged when it has no directives', function () {
     expect($replacer->parse('<p>No directives here.</p>'))->toBe('<p>No directives here.</p>');
 });
 
-it('leaves ignored conditional comments unchanged', function () {
+it('disables all parsing for the whole response when the disable marker is present', function () {
     $replacer = replacerWithVariables(['enabled' => true]);
 
-    $mso = '<!--[if mso]><table><tr><td>Outlook</td></tr></table><![endif]-->';
-    $ignored = '<!--[conditional-comments-ignore]--><!--[if enabled]-->Visible<!--[endif]-->';
+    $content = '<!--[cache-directives-disable]--><!--[if enabled]-->Visible<!--[endif]-->';
 
-    expect($replacer->parse($mso))->toBe($mso);
-    expect($replacer->parse($ignored))->toBe($ignored);
+    expect($replacer->parse($content))->toBe($content);
+});
+
+it('leaves an ignore range verbatim while still parsing the rest of the response', function () {
+    $replacer = replacerWithVariables(['enabled' => true]);
+
+    $content = '<!--[if enabled]-->A<!--[endif]-->'
+        .'<!--[cache-directives-ignore]--><!--[if mso]><table></table><![endif]--><!--[cache-directives-endignore]-->'
+        .'<!--[if enabled]-->B<!--[endif]-->';
+
+    // Wrapper markers stripped, inner content kept as-is, outer directives processed.
+    expect($replacer->parse($content))
+        ->toBe('A<!--[if mso]><table></table><![endif]-->B');
+});
+
+it('does not process directives inside an ignore range', function () {
+    $replacer = replacerWithVariables(['enabled' => true]);
+
+    $content = '<!--[cache-directives-ignore]--><!--[if enabled]-->Kept<!--[endif]--><!--[cache-directives-endignore]-->';
+
+    expect($replacer->parse($content))->toBe('<!--[if enabled]-->Kept<!--[endif]-->');
+});
+
+it('a disable marker shown inside an ignore range does not disable the page', function () {
+    $replacer = replacerWithVariables(['enabled' => true]);
+
+    $content = '<!--[cache-directives-ignore]--><!--[cache-directives-disable]--><!--[cache-directives-endignore]-->'
+        .'<!--[if enabled]-->Visible<!--[endif]-->';
+
+    expect($replacer->parse($content))
+        ->toBe('<!--[cache-directives-disable]-->Visible');
 });
 
 it('replaces directives in cached responses', function () {

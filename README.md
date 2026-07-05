@@ -106,7 +106,7 @@ Use `|`.
 
 ### Echo
 
-Use `echo` to print a variable value. Echo directives can be standalone or block-style. Values are inserted as raw text, so escape untrusted values before returning them from a variable hook.
+Use `echo` to print a variable value. Echo directives can be standalone or block-style. **Output is HTML-escaped by default**, so it is safe to echo untrusted values.
 
 ```html
 <a href="/account" data-cache="<!--[echo cache_status]-->">
@@ -114,6 +114,16 @@ Use `echo` to print a variable value. Echo directives can be standalone or block
 </a>
 
 <!--[echo cache_status]>Unknown<![endecho]-->
+```
+
+### Raw
+
+Use `raw` to print a variable value **without escaping**. Only use this for values you fully control and know to be safe HTML — printing untrusted data with `raw` is an XSS vector.
+
+```html
+<!--[raw safe_svg_icon]-->
+
+<!--[raw safe_svg_icon]>Fallback<![endraw]-->
 ```
 
 ### Combined expressions
@@ -138,7 +148,7 @@ Unknown variable names throw an `InvalidArgumentException`, so typos fail loudly
 
 ## Built-in variables
 
-These variables are available by default and can be used as conditions:
+These variables are available by default and can be used in expressions:
 
 - `logged_in`: Current Statamic user is authenticated.
 - `logged_out`: Current Statamic user is not authenticated.
@@ -216,7 +226,7 @@ Add your own variable names with the `variables` hook. Register the hook during 
 Values can be scalar values or closures that are called when the variable is evaluated.
 
 ```php
-use Daun\StatamicCacheConditions\CacheDirectiveReplacer;
+use Daun\StatamicCacheDirectives\CacheDirectiveReplacer;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -254,14 +264,46 @@ Then use those variables in comments:
 <!--[endunless]-->
 ```
 
-## Ignoring a response
+## Disabling a response
 
-If a response contains Outlook conditional comments (`<!--[if mso]>`) or this marker, parsing is skipped for the whole response.
-This is useful for emails rendered by Statamic, where conditional comments are part of the final html.
+If a response contains this marker anywhere, directive parsing is skipped for the **whole response**. Use it as a kill switch on routes that must never be processed (for example email or preview endpoints).
 
 ```html
-<!--[conditional-comments-ignore]-->
+<!--[cache-directives-disable]-->
 ```
+
+## Ignoring a range
+
+Wrap a section in ignore markers to leave it **verbatim** while the rest of the response is still parsed. Directives inside the range are not processed, and the wrapper comments are removed from the output. This is useful for fragments that legitimately contain conditional comments (for example Outlook `<!--[if mso]>` markup) or documentation showing directive syntax.
+
+```html
+<!--[cache-directives-ignore]-->
+  <!--[if mso]><table><tr><td>Outlook</td></tr></table><![endif]-->
+<!--[cache-directives-endignore]-->
+```
+
+> [!WARNING]
+> Both markers control directive processing, so they must **never** originate from untrusted, user-controlled content. See [Security](#security) below.
+
+## Security
+
+This replacer scans the **entire** cached HTML response for directive comments. Cached pages frequently contain user-generated content (comments, reviews, usernames, profile fields, reflected search queries, form echoes). If any of that content can contain the strings below, it can subvert directive processing:
+
+- **`<!--[cache-directives-disable]-->`** disables all directive processing for the page. An attacker who injects it can prevent auth-gated blocks such as `<!--[if super]-->...<!--[endif]-->` from being stripped, exposing that markup to every visitor.
+- **`<!--[cache-directives-ignore]-->` … `<!--[cache-directives-endignore]-->`** leaves an arbitrary range unprocessed, which can likewise expose auth-gated markup wrapped inside it.
+- **`<!--[if ...]-->` / `<!--[echo ...]-->`** markers let injected content pair with, hide, or reveal surrounding directive blocks.
+
+To stay safe, **strip or neutralize directive comments from user-controlled content before it is rendered into a cacheable page**. For example, remove `<!--[` sequences from user input, or escape them:
+
+```php
+// When rendering untrusted values into a page, neutralize directive markers.
+$safe = str_replace('<!--[', '<!--&#91;', $userContent);
+```
+
+Failure handling:
+
+- A directive that fails to evaluate (for example an unknown variable) is **removed** (fails closed) rather than throwing, so a single malformed or injected directive cannot break the whole page. The error is reported to your logger.
+- When `app.debug` is enabled (local/dev), the failure is **rethrown** instead, so template typos surface loudly during development.
 
 ## License
 
