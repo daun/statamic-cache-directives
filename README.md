@@ -106,11 +106,19 @@ Use `|`.
 
 ### Combined expressions
 
-`&` groups are evaluated inside `|` groups. Parentheses are not supported.
+`&` groups are evaluated inside `|` groups. Use parentheses to group subexpressions or override precedence.
 
 ```html
 <!--[if logged_out | logged_in & super]-->
   <a href="/preview">Preview tools</a>
+<!--[endif]-->
+
+<!--[if (logged_out | super) & has_preview]-->
+  <a href="/preview">Preview tools</a>
+<!--[endif]-->
+
+<!--[if !(logged_in & super)]-->
+  <p>Visible unless signed in as a super admin.</p>
 <!--[endif]-->
 ```
 

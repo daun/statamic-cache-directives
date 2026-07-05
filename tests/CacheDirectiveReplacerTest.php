@@ -135,6 +135,49 @@ it('evaluates negated directive expressions', function (string $expression, bool
     'not true' => ['not truthy', false],
 ]);
 
+it('evaluates parenthesized directive subexpressions', function (string $expression, bool $expected) {
+    $replacer = replacerWithVariables([
+        'truthy' => true,
+        'falsy' => false,
+    ]);
+
+    expect($replacer->evaluateExpression($expression))->toBe($expected);
+})->with([
+    'wrapped truthy' => ['(truthy)', true],
+    'wrapped falsy' => ['(falsy)', false],
+    'nested wrapped truthy' => ['((truthy))', true],
+    'wrapped and false' => ['(truthy & falsy)', false],
+    'wrapped or true' => ['(truthy | falsy)', true],
+    'negated wrapped false' => ['!(falsy)', true],
+    'negated wrapped and false' => ['!(truthy & falsy)', true],
+    'negated wrapped or true' => ['!(truthy | falsy)', false],
+    'and with wrapped operands' => ['(truthy)&(truthy)', true],
+    'or with wrapped operands' => ['(falsy)|(truthy)', true],
+    'parentheses override precedence false' => ['(truthy | falsy) & falsy', false],
+    'parentheses preserve nested precedence true' => ['truthy | (falsy & falsy)', true],
+]);
+
+it('parses directives with parenthesized subexpressions', function () {
+    $replacer = replacerWithVariables([
+        'truthy' => true,
+        'falsy' => false,
+    ]);
+
+    expect($replacer->parse('<!--[if (truthy | falsy) & truthy]-->Visible<!--[endif]-->'))->toBe('Visible')
+        ->and($replacer->parse('<!--[if (truthy | falsy) & falsy]-->Hidden<!--[endif]-->'))->toBe('');
+});
+
+it('throws for unbalanced directive subexpressions', function (string $expression) {
+    $replacer = replacerWithVariables([
+        'truthy' => true,
+    ]);
+
+    $replacer->evaluateExpression($expression);
+})->with([
+    'missing closing parenthesis' => ['(truthy'],
+    'missing opening parenthesis' => ['truthy)'],
+])->throws(InvalidArgumentException::class, 'Unmatched parentheses in cache directive:');
+
 it('calls closure backed condition variables', function () {
     $called = false;
 

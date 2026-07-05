@@ -88,17 +88,19 @@ class CacheDirectiveReplacer implements Replacer
         }
 
         $expression = trim($expression);
+        $this->assertBalancedParentheses($expression);
+        $expression = $this->unwrapParentheses($expression);
 
         // Handle OR groups (|)
-        if (Str::contains($expression, '|')) {
-            return collect(explode('|', $expression))
+        if ($parts = $this->splitTopLevel($expression, '|')) {
+            return collect($parts)
                 ->map(fn ($exp) => $this->evaluateExpression($exp))
                 ->some(fn ($result) => (bool) $result);
         }
 
         // Handle AND groups (&)
-        if (Str::contains($expression, '&')) {
-            return collect(explode('&', $expression))
+        if ($parts = $this->splitTopLevel($expression, '&')) {
+            return collect($parts)
                 ->map(fn ($exp) => $this->evaluateExpression($exp))
                 ->every(fn ($result) => (bool) $result);
         }
@@ -119,5 +121,87 @@ class CacheDirectiveReplacer implements Replacer
         }
 
         return (bool) $value;
+    }
+
+    /** @return null|array<int, string> */
+    private function splitTopLevel(string $expression, string $operator): ?array
+    {
+        $parts = [];
+        $depth = 0;
+        $start = 0;
+        $length = strlen($expression);
+
+        for ($i = 0; $i < $length; $i++) {
+            if ($expression[$i] === '(') {
+                $depth++;
+            } elseif ($expression[$i] === ')') {
+                $depth--;
+            } elseif ($expression[$i] === $operator && $depth === 0) {
+                $parts[] = substr($expression, $start, $i - $start);
+                $start = $i + 1;
+            }
+        }
+
+        if ($parts === []) {
+            return null;
+        }
+
+        $parts[] = substr($expression, $start);
+
+        return $parts;
+    }
+
+    private function unwrapParentheses(string $expression): string
+    {
+        while ($this->isWrappedInParentheses($expression)) {
+            $expression = trim(substr($expression, 1, -1));
+        }
+
+        return $expression;
+    }
+
+    private function isWrappedInParentheses(string $expression): bool
+    {
+        if (! str_starts_with($expression, '(')) {
+            return false;
+        }
+
+        $depth = 0;
+        $last = strlen($expression) - 1;
+
+        for ($i = 0; $i <= $last; $i++) {
+            if ($expression[$i] === '(') {
+                $depth++;
+            } elseif ($expression[$i] === ')') {
+                $depth--;
+
+                if ($depth === 0) {
+                    return $i === $last;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private function assertBalancedParentheses(string $expression): void
+    {
+        $depth = 0;
+
+        for ($i = 0; $i < strlen($expression); $i++) {
+            if ($expression[$i] === '(') {
+                $depth++;
+            } elseif ($expression[$i] === ')') {
+                $depth--;
+            }
+
+            if ($depth < 0) {
+                throw new \InvalidArgumentException("Unmatched parentheses in cache directive: {$expression}");
+            }
+        }
+
+        if ($depth !== 0) {
+            throw new \InvalidArgumentException("Unmatched parentheses in cache directive: {$expression}");
+        }
     }
 }
