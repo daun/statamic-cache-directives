@@ -52,7 +52,13 @@ class CacheDirectiveReplacer implements Replacer
 
     public static function variable(string $name, mixed $value): void
     {
-        static::$customVariables[$name] = $value;
+        static::variables([$name => $value]);
+    }
+
+    /** @param array<string, \Closure|mixed> $variables */
+    public static function variables(array $variables): void
+    {
+        static::$customVariables = array_merge(static::$customVariables, $variables);
     }
 
     protected function getVariables(): array

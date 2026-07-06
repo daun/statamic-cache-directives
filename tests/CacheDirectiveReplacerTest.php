@@ -244,7 +244,18 @@ it('supports custom variables registered with variable', function () {
     expect($replacer->parse('<!--[if editor]-->Edit<!--[endif]-->'))->toBe('Edit');
 });
 
-it('passes variables registered with variable through the variables hook', function () {
+it('supports custom variables registered with variables', function () {
+    CacheDirectiveReplacer::variables([
+        'editor' => fn () => true,
+        'member' => fn () => false,
+    ]);
+
+    $replacer = new CacheDirectiveReplacer;
+
+    expect($replacer->parse('<!--[if editor]-->Edit<!--[endif]--><!--[if member]-->Member<!--[endif]-->'))->toBe('Edit');
+});
+
+it('passes registered variables through the variables hook', function () {
     CacheDirectiveReplacer::variable('editor', fn () => false);
 
     CacheDirectiveReplacer::hook('variables', function (array $variables, Closure $next) {
