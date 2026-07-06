@@ -281,6 +281,11 @@ it('supports built in logged in and logged out conditions', function () {
 it('supports the built in cp access condition', function () {
     $user = new class
     {
+        public function isSuper(): bool
+        {
+            return false;
+        }
+
         public function hasPermission(string $permission): bool
         {
             return $permission === 'access cp';
