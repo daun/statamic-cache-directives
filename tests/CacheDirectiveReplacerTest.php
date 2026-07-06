@@ -302,6 +302,27 @@ it('treats the cp access condition as false without an authenticated user', func
     expect($replacer->parse('<!--[if cp_access]-->Control Panel<!--[endif]-->'))->toBe('');
 });
 
+it('treats super users as having cp access', function () {
+    $user = new class
+    {
+        public function isSuper(): bool
+        {
+            return true;
+        }
+
+        public function hasPermission(string $permission): bool
+        {
+            return false;
+        }
+    };
+
+    mockCpGuard(user: $user);
+
+    $replacer = new CacheDirectiveReplacer;
+
+    expect($replacer->parse('<!--[if cp_access]-->Control Panel<!--[endif]-->'))->toBe('Control Panel');
+});
+
 it('supports the built in super condition', function () {
     $user = new class implements Authenticatable
     {
