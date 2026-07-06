@@ -164,7 +164,7 @@ These variables are available by default and can be used in expressions:
 
 - `logged_in`: Current Statamic user is authenticated.
 - `logged_out`: Current Statamic user is not authenticated.
-- `cp_access`: Current Statamic user has permission to access the control panel.
+- `cp_access`: Current Statamic user has control panel access.
 - `super`: Current Statamic user is a super admin.
 
 Authentication uses Statamic's configured control-panel guard: `config('statamic.users.guards.cp')`.
