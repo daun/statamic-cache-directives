@@ -278,6 +278,30 @@ it('supports built in logged in and logged out conditions', function () {
     expect($replacer->parse('<!--[if logged_out]-->Out<!--[endif]-->'))->toBe('');
 });
 
+it('supports the built in cp access condition', function () {
+    $user = new class
+    {
+        public function hasPermission(string $permission): bool
+        {
+            return $permission === 'access cp';
+        }
+    };
+
+    mockCpGuard(user: $user);
+
+    $replacer = new CacheDirectiveReplacer;
+
+    expect($replacer->parse('<!--[if cp_access]-->Control Panel<!--[endif]-->'))->toBe('Control Panel');
+});
+
+it('treats the cp access condition as false without an authenticated user', function () {
+    mockCpGuard(user: null);
+
+    $replacer = new CacheDirectiveReplacer;
+
+    expect($replacer->parse('<!--[if cp_access]-->Control Panel<!--[endif]-->'))->toBe('');
+});
+
 it('supports the built in super condition', function () {
     $user = new class implements Authenticatable
     {

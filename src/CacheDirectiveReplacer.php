@@ -66,6 +66,7 @@ class CacheDirectiveReplacer implements Replacer
         $variables = [
             'logged_in' => fn () => $this->auth()->check(),
             'logged_out' => fn () => ! $this->auth()->check(),
+            'cp_access' => fn () => $this->auth()->user()?->hasPermission('access cp') ?? false,
             'super' => fn () => $this->auth()->user()?->isSuper() ?? false,
         ];
 

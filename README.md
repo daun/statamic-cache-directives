@@ -164,6 +164,7 @@ These variables are available by default and can be used in expressions:
 
 - `logged_in`: Current Statamic user is authenticated.
 - `logged_out`: Current Statamic user is not authenticated.
+- `cp_access`: Current Statamic user has permission to access the control panel.
 - `super`: Current Statamic user is a super admin.
 
 Authentication uses Statamic's configured control-panel guard: `config('statamic.users.guards.cp')`.
@@ -224,11 +225,11 @@ Authentication uses Statamic's configured control-panel guard: `config('statamic
 <!--[endunless]-->
 ```
 
-### Load admin-only JavaScript
+### Load control-panel JavaScript
 
 ```html
-<!--[if logged_in and super]-->
-  <script type="module" src="/build/admin-overlay.js"></script>
+<!--[if cp_access]-->
+  <script type="module" src="/build/admin-bar.js"></script>
 <!--[endif]-->
 ```
 
@@ -248,8 +249,8 @@ class AppServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        CacheDirectiveReplacer::variable('editor', fn () => auth()->user()?->roles()->has('editor') ?? false);
-        CacheDirectiveReplacer::variable('member', fn () => auth()->user()?->groups()->has('members') ?? false);
+        CacheDirectiveReplacer::variable('editor', fn () => auth()->user()?->hasRole('editor') ?? false);
+        CacheDirectiveReplacer::variable('member', fn () => auth()->user()?->isInGroup('members') ?? false);
     }
 }
 ```
