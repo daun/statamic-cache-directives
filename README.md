@@ -234,8 +234,23 @@ Authentication uses Statamic's configured control-panel guard: `config('statamic
 
 ## Custom variables
 
-Add your own variable names with the `variables` hook. Register the hook during application boot, for example in `app/Providers/AppServiceProvider.php`.
-Values can be scalar values, arrays, objects, or closures that are called when the variable is evaluated.
+Add custom variables during application boot using the `variable` method.
+Values can be scalar values, arrays or objects. Closures are evaluated lazily when the variable is encountered.
+
+```php
+use Daun\StatamicCacheDirectives\CacheDirectiveReplacer;
+
+class AppServiceProvider extends ServiceProvider
+{
+    public function boot(): void
+    {
+        CacheDirectiveReplacer::variable('editor', fn () => auth()->user()?->roles()->has('editor') ?? false);
+        CacheDirectiveReplacer::variable('member', fn () => auth()->user()?->groups()->has('members') ?? false);
+    }
+}
+```
+
+For bulk registration or overwriting a built-in variable, use the provided hook. Add custom keys or return a new array.
 
 ```php
 use Daun\StatamicCacheDirectives\CacheDirectiveReplacer;
@@ -245,10 +260,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         CacheDirectiveReplacer::hook('variables', function (array $variables, Closure $next) {
-            $variables['editor'] = fn () => auth()->user()?->roles()->has('editor') ?? false;
-            $variables['member'] = fn () => auth()->user()?->groups()->has('members') ?? false;
-            $variables['has_cart'] = fn () => (bool) session('cart.items');
             $variables['in_uk'] = fn () => new \GeoIp2\Database\Reader()->city(request()->getClientIp())->country->isoCode === 'UK';
+            $variables['has_cart'] = fn () => (bool) session('cart.items');
 
             return $next($variables);
         });

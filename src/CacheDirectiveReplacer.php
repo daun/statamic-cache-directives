@@ -37,6 +37,9 @@ class CacheDirectiveReplacer implements Replacer
     private const ECHO_INLINE_PATTERN = '/<!--\[echo\s+(.+?)\]-->/i';
 
     /** @var array<string, \Closure|mixed> */
+    protected static array $customVariables = [];
+
+    /** @var array<string, \Closure|mixed> */
     protected array $variables = [];
 
     protected ExpressionEvaluator $evaluator;
@@ -47,6 +50,11 @@ class CacheDirectiveReplacer implements Replacer
         $this->evaluator = new ExpressionEvaluator($this->variables);
     }
 
+    public static function variable(string $name, mixed $value): void
+    {
+        static::$customVariables[$name] = $value;
+    }
+
     protected function getVariables(): array
     {
         $variables = [
@@ -55,7 +63,7 @@ class CacheDirectiveReplacer implements Replacer
             'super' => fn () => $this->auth()->user()?->isSuper() ?? false,
         ];
 
-        return $this->runHooks('variables', $variables);
+        return $this->runHooks('variables', array_merge($variables, static::$customVariables));
     }
 
     public function prepareResponseToCache(Response $cachedResponse, Response $response)

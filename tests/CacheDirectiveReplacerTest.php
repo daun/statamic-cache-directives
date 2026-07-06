@@ -13,11 +13,19 @@ uses(TestCase::class);
 
 beforeEach(function () {
     app()->instance('statamic.hooks', collect());
+    resetCacheDirectiveReplacerVariables();
 });
 
 afterEach(function () {
     app()->instance('statamic.hooks', collect());
+    resetCacheDirectiveReplacerVariables();
 });
+
+function resetCacheDirectiveReplacerVariables(): void
+{
+    $property = new ReflectionProperty(CacheDirectiveReplacer::class, 'customVariables');
+    $property->setValue(null, []);
+}
 
 function replacerWithVariables(array $variables = []): CacheDirectiveReplacer
 {
@@ -226,6 +234,28 @@ it('calls closure backed condition variables', function () {
 
     expect($replacer->parse('<!--[if computed]-->Visible<!--[endif]-->'))->toBe('Visible')
         ->and($called)->toBeTrue();
+});
+
+it('supports custom variables registered with variable', function () {
+    CacheDirectiveReplacer::variable('editor', fn () => true);
+
+    $replacer = new CacheDirectiveReplacer;
+
+    expect($replacer->parse('<!--[if editor]-->Edit<!--[endif]-->'))->toBe('Edit');
+});
+
+it('passes variables registered with variable through the variables hook', function () {
+    CacheDirectiveReplacer::variable('editor', fn () => false);
+
+    CacheDirectiveReplacer::hook('variables', function (array $variables, Closure $next) {
+        $variables['editor'] = fn () => true;
+
+        return $next($variables);
+    });
+
+    $replacer = new CacheDirectiveReplacer;
+
+    expect($replacer->parse('<!--[if editor]-->Edit<!--[endif]-->'))->toBe('Edit');
 });
 
 it('supports built in logged in and logged out conditions', function () {
