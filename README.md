@@ -234,8 +234,12 @@ Authentication uses Statamic's configured control-panel guard: `config('statamic
 
 ## Custom variables
 
-Add custom variables during application boot using the `variable` method.
-Values can be scalar values, arrays or objects. Closures are evaluated lazily when the variable is encountered.
+Add custom variables during application boot using `variable()` or `variables()`. Values can be scalar values, arrays,
+objects or closures. Closures are evaluated lazily when the variable is first encountered.
+
+Use closures for request-dependent values such as auth, session, request data, or GeoIP lookups. In long-lived worker runtimes
+such as FrankenPHP, Swoole, RoadRunner, or Laravel Octane, service providers can boot once per worker instead of once per request.
+Passing a direct value would capture the value at boot; passing a closure resolves it for the current request.
 
 ```php
 use Daun\StatamicCacheDirectives\CacheDirectiveReplacer;
@@ -250,7 +254,7 @@ class AppServiceProvider extends ServiceProvider
 }
 ```
 
-For bulk registration or overwriting a built-in variable, use the provided hook. Add custom keys or return a new array.
+For bulk registration, use `variables()`.
 
 ```php
 use Daun\StatamicCacheDirectives\CacheDirectiveReplacer;
@@ -259,12 +263,10 @@ class AppServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        CacheDirectiveReplacer::hook('variables', function (array $variables, Closure $next) {
-            $variables['in_uk'] = fn () => new \GeoIp2\Database\Reader()->city(request()->getClientIp())->country->isoCode === 'UK';
-            $variables['has_cart'] = fn () => (bool) session('cart.items');
-
-            return $next($variables);
-        });
+        CacheDirectiveReplacer::variables([
+            'in_uk' => fn () => app(GeoIp::class)->countryCode(request()->ip()) === 'UK',
+            'has_cart' => fn () => (bool) session('cart.items'),
+        ]);
     }
 }
 ```
